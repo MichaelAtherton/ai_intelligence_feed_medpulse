@@ -1,3 +1,5 @@
+"use node";
+
 // Railway Crawl4AI Scraper Service
 const SCRAPER_SERVICE_URL = process.env.SCRAPER_SERVICE_URL || 'https://aiintelligencefeedmedpulse-production.up.railway.app';
 
