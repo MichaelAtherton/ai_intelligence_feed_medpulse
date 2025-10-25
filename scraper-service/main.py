@@ -67,11 +67,14 @@ async def fetch_articles(request: FetchRequest):
             soup = BeautifulSoup(result.html, 'html.parser')
             articles = []
             seen = set()
-            
-            for link in soup.find_all('a', href=True):
+            all_links = soup.find_all('a', href=True)
+
+            print(f"[DEBUG] Total links found: {len(all_links)}")
+
+            for link in all_links:
                 href = link['href']
                 text = link.get_text(strip=True)
-                
+
                 # Make absolute URL
                 if not href.startswith('http'):
                     if href.startswith('/'):
@@ -82,20 +85,21 @@ async def fetch_articles(request: FetchRequest):
                         href = f"{base_url}{href}"
                     else:
                         href = urljoin(request.url, href)
-                
+
                 # Skip duplicates
                 if href in seen:
                     continue
                 seen.add(href)
-                
+
                 # Look for fullarticle pattern or article-like URLs
                 if '/fullarticle/' in href.lower() or '/article/' in href.lower():
+                    print(f"[DEBUG] Matched article URL: {href[:100]}")
                     articles.append(ArticleLink(
                         title=text if text else '[No title]',
                         url=href,
                         snippet=text[:200] if text else ''
                     ))
-            
+
             print(f"✅ [SCRAPER] Found {len(articles)} articles from {request.url}")
             return FetchResponse(
                 success=True,
