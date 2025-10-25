@@ -10,15 +10,38 @@ export async function scrapeArticleContent(url: string): Promise<{
   error?: string;
 }> {
   try {
-    console.log(`[SCRAPER] Calling Railway Crawl4AI service for: ${url}`);
+    console.log(`[SCRAPER] Calling Railway Crawl4AI /v1/scrape for: ${url}`);
 
-    const response = await fetch(`${SCRAPER_SERVICE_URL}/scrape`, {
+    // Use new OpenAPI-compliant /v1/scrape endpoint
+    const requestBody = {
+      url,
+      extract: {
+        title: {
+          fallbackToMeta: true  // Use meta tags and h1 as fallback
+        },
+        content: {
+          format: "markdown",   // Get content as markdown
+          removeSelectors: [".ad", ".advertisement", "nav", "footer", ".social-share"]
+        }
+      },
+      processing: {
+        minContentLength: 200,
+        maxContentLength: 40000,
+        normalizeWhitespace: true
+      },
+      options: {
+        timeout: 60000,
+        executeJs: true
+      }
+    };
+
+    const response = await fetch(`${SCRAPER_SERVICE_URL}/v1/scrape`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ url, title: '' }),
-      signal: AbortSignal.timeout(60000), // 60s timeout for Crawl4AI
+      body: JSON.stringify(requestBody),
+      signal: AbortSignal.timeout(70000), // 70s timeout (10s buffer)
     });
 
     if (!response.ok) {
@@ -30,7 +53,7 @@ export async function scrapeArticleContent(url: string): Promise<{
 
     const result = await response.json();
 
-    console.log(`[SCRAPER] Railway result: success=${result.success}, contentLength=${result.content_length}`);
+    console.log(`[SCRAPER] Railway result: success=${result.success}, contentLength=${result.data?.contentLength || 0}`);
 
     if (!result.success) {
       return {
@@ -39,19 +62,19 @@ export async function scrapeArticleContent(url: string): Promise<{
       };
     }
 
-    if (!result.content || result.content.length < 200) {
+    if (!result.data || !result.data.content || result.data.contentLength < 200) {
       return {
         success: false,
-        error: `Insufficient content extracted (${result.content?.length || 0} chars)`,
+        error: `Insufficient content extracted (${result.data?.contentLength || 0} chars)`,
       };
     }
 
-    console.log(`[SCRAPER] SUCCESS: Extracted ${result.content.length} chars via Railway Crawl4AI`);
+    console.log(`[SCRAPER] SUCCESS: Extracted ${result.data.contentLength} chars via Railway Crawl4AI`);
 
     return {
       success: true,
-      content: result.content,
-      title: result.title || '',
+      content: result.data.content,
+      title: result.data.title || '',
     };
   } catch (error) {
     console.error(`[SCRAPER] Railway Crawl4AI error:`, error);
