@@ -4,7 +4,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 
 export const triggerDiscovery = action({
   args: {},
-  handler: async (ctx) => {
+  handler: async (ctx): Promise<{ success: boolean; message: string; userId: string }> => {
     // USER ISOLATION: Only run discovery for the logged-in user
     // Delegates to runDiscoveryForCurrentUser which checks authentication
     return await ctx.runAction(api.discoveryAction.runDiscoveryForCurrentUser, {});

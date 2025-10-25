@@ -43,10 +43,10 @@ export const runDiscoveryForCurrentUser = action({
 
 export const runDiscoveryPipelineForAllUsers = internalAction({
   args: {},
-  handler: async (ctx) => {
+  handler: async (ctx): Promise<{ success: boolean; usersProcessed: number }> => {
     console.log("🚀 [CRON-TRIGGERED] Discovery Pipeline Starting for ALL USERS");
 
-    const allUsers = await ctx.runQuery(internal.userPreferences.getAllUsers);
+    const allUsers: any[] = await ctx.runQuery(internal.userPreferences.getAllUsers);
     console.log(`📊 Found ${allUsers.length} users to process`);
 
     for (const user of allUsers) {

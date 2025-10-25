@@ -60,7 +60,7 @@ When answering questions:
 - Focus on practical implications for healthcare professionals`;
 
     // Build message history for the AI
-    const conversationHistory = messages.map((msg) => ({
+    const conversationHistory = messages.map((msg: any) => ({
       role: msg.role as "user" | "assistant",
       content: msg.content,
     }));
@@ -129,7 +129,7 @@ When answering questions:
           max_tokens: 1000,
           system: systemPrompt,
           messages: [
-            ...conversationHistory.map((msg) => ({
+            ...conversationHistory.map((msg: any) => ({
               role: msg.role as "user" | "assistant",
               content: msg.content,
             })),
@@ -259,7 +259,7 @@ When answering questions:
 - Focus on practical implications for healthcare professionals`;
 
     // Build message history for the AI
-    const conversationHistory = messages.map((msg) => ({
+    const conversationHistory = messages.map((msg: any) => ({
       role: msg.role as "user" | "assistant",
       content: msg.content,
     }));
@@ -309,7 +309,7 @@ When answering questions:
           max_tokens: 1000,
           system: systemPrompt,
           messages: [
-            ...conversationHistory.map((msg) => ({
+            ...conversationHistory.map((msg: any) => ({
               role: msg.role as "user" | "assistant",
               content: msg.content,
             })),
