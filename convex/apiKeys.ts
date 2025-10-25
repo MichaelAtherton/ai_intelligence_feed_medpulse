@@ -151,17 +151,26 @@ export const getDecryptedApiKey = internalQuery({
     provider: v.union(v.literal("openai"), v.literal("anthropic")),
   },
   handler: async (ctx, args) => {
+    console.log(`[API_KEY] Looking for key: userId=${args.userId}, provider=${args.provider}`);
+
     const key = await ctx.db
       .query("userApiKeys")
-      .withIndex("by_user_and_provider", (q) => 
+      .withIndex("by_user_and_provider", (q) =>
         q.eq("userId", args.userId).eq("provider", args.provider)
       )
       .first();
 
+    console.log(`[API_KEY] Query result: ${key ? 'FOUND' : 'NOT FOUND'}`);
+    if (key) {
+      console.log(`[API_KEY] Key details: _id=${key._id}, isActive=${key.isActive}, provider=${key.provider}`);
+    }
+
     if (!key || !key.isActive) {
+      console.log(`[API_KEY] Returning null: ${!key ? 'No key found' : 'Key is inactive'}`);
       return null;
     }
 
+    console.log(`[API_KEY] Returning decrypted key`);
     return decryptKey(key.encryptedKey);
   },
 });
