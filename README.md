@@ -18,7 +18,7 @@ A personalized intelligence platform for healthcare professionals to stay curren
 - **Backend**: Convex (real-time database + serverless functions)
 - **Auth**: Convex Auth (username/password)
 - **AI**: OpenAI (GPT-4.1-nano, text-embedding-3-small) or Anthropic
-- **Scraping**: Cheerio + Mozilla Readability + JSDOM
+- **Scraping**: Crawl4AI (Playwright-based, JavaScript rendering) deployed on Railway
 - **Vector Search**: Convex vector indexes (384 dimensions)
 
 ## Getting Started
