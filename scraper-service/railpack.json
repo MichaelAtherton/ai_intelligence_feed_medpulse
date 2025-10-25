@@ -2,8 +2,11 @@
   "$schema": "https://schema.railpack.com",
   "provider": "python",
   "steps": {
+    "install": {
+      "commands": ["pip install -r requirements.txt"]
+    },
     "playwright": {
-      "inputs": [{ "step": "build" }],
+      "inputs": [{ "step": "install" }],
       "commands": ["python -m playwright install --with-deps chromium"]
     }
   },
