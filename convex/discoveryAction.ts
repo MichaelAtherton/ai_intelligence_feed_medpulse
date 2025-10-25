@@ -1,30 +1,79 @@
 "use node";
 
-import { internalAction } from "./_generated/server";
+import { internalAction, action } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { discoveryAgentOpenAI } from "./discovery/agent";
 import { Id } from "./_generated/dataModel";
+import { getAuthUserId } from "@convex-dev/auth/server";
+import { v } from "convex/values";
 
-export const runDiscoveryPipeline = internalAction({
+// ============================================================================
+// USER-TRIGGERED DISCOVERY (Manual button click - ISOLATED to logged-in user)
+// ============================================================================
+
+export const runDiscoveryForCurrentUser = action({
   args: {},
   handler: async (ctx) => {
-    console.log("🚀 Discovery Pipeline Starting");
-    
-    const allUsers = await ctx.runQuery(internal.userPreferences.getAllUsers);
-    
-    for (const user of allUsers) {
-      try {
-        await runDiscoveryForUser(ctx, user._id);
-      } catch (error) {
-        console.error(`Failed for user ${user._id}:`, error);
-      }
+    // Get the logged-in user
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated. Please log in to run discovery.");
     }
-    
-    return { success: true };
+
+    console.log(`🔍 [USER-TRIGGERED] Discovery starting for userId: ${userId}`);
+
+    // Schedule discovery for this user only
+    await ctx.scheduler.runAfter(
+      0,
+      internal.discoveryAction.runDiscoveryForUser,
+      { userId }
+    );
+
+    return {
+      success: true,
+      message: "Discovery pipeline scheduled for your account only",
+      userId
+    };
   },
 });
 
-async function runDiscoveryForUser(ctx: any, userId: Id<"users">) {
+// ============================================================================
+// CRON-TRIGGERED DISCOVERY (Automated - runs for ALL users)
+// ============================================================================
+
+export const runDiscoveryPipelineForAllUsers = internalAction({
+  args: {},
+  handler: async (ctx) => {
+    console.log("🚀 [CRON-TRIGGERED] Discovery Pipeline Starting for ALL USERS");
+
+    const allUsers = await ctx.runQuery(internal.userPreferences.getAllUsers);
+    console.log(`📊 Found ${allUsers.length} users to process`);
+
+    for (const user of allUsers) {
+      try {
+        console.log(`\n🔍 Processing discovery for user ${user._id}`);
+        await runDiscoveryForUserImpl(ctx, user._id);
+      } catch (error) {
+        console.error(`❌ Failed for user ${user._id}:`, error);
+      }
+    }
+
+    return { success: true, usersProcessed: allUsers.length };
+  },
+});
+
+// ============================================================================
+// CORE DISCOVERY LOGIC (Exported as internal action for scheduler)
+// ============================================================================
+
+export const runDiscoveryForUser = internalAction({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    return await runDiscoveryForUserImpl(ctx, args.userId);
+  }
+});
+
+async function runDiscoveryForUserImpl(ctx: any, userId: Id<"users">) {
   console.log(`\n🔍 Running discovery for user ${userId}`);
   
   const runId: Id<"discoveryRuns"> = await ctx.runMutation(internal.state.startDiscoveryRun, {

@@ -1,14 +1,13 @@
 import { action } from "./_generated/server";
-import { internal } from "./_generated/api";
+import { internal, api } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
 export const triggerDiscovery = action({
   args: {},
   handler: async (ctx) => {
-    // Schedule the discovery pipeline to run in the background
-    // This allows the user to navigate away without interrupting the process
-    await ctx.scheduler.runAfter(0, internal.discoveryAction.runDiscoveryPipeline, {});
-    return { success: true, message: "Discovery pipeline scheduled and running in background" };
+    // USER ISOLATION: Only run discovery for the logged-in user
+    // Delegates to runDiscoveryForCurrentUser which checks authentication
+    return await ctx.runAction(api.discoveryAction.runDiscoveryForCurrentUser, {});
   },
 });
 
