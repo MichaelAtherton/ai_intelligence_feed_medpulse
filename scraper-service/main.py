@@ -327,9 +327,10 @@ async def discover_links(request: DiscoverRequest):
         if bypass_cloudflare:
             print("[DISCOVER] Using UndetectedAdapter for Cloudflare bypass")
             browser_config = BrowserConfig(
-                headless=False,  # Headless mode more easily detected
+                headless=True,  # Use headless mode for Railway (no display server)
                 verbose=True,
-                enable_stealth=True
+                enable_stealth=True,
+                extra_args=['--disable-blink-features=AutomationControlled']  # Additional stealth
             )
             adapter = UndetectedAdapter()
             strategy = AsyncPlaywrightCrawlerStrategy(
@@ -451,9 +452,10 @@ async def scrape_content(request: ScrapeRequest):
         if bypass_cloudflare:
             print("[SCRAPE] Using UndetectedAdapter for Cloudflare bypass")
             browser_config = BrowserConfig(
-                headless=False,  # Headless mode more easily detected
+                headless=True,  # Use headless mode for Railway (no display server)
                 verbose=True,
-                enable_stealth=True
+                enable_stealth=True,
+                extra_args=['--disable-blink-features=AutomationControlled']  # Additional stealth
             )
             adapter = UndetectedAdapter()
             strategy = AsyncPlaywrightCrawlerStrategy(
