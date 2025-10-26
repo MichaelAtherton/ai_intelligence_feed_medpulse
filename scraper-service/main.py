@@ -1,7 +1,8 @@
 from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any, Literal
-from crawl4ai import AsyncWebCrawler
+from crawl4ai import AsyncWebCrawler, BrowserConfig, UndetectedAdapter
+from crawl4ai.async_crawler_strategy import AsyncPlaywrightCrawlerStrategy
 from bs4 import BeautifulSoup
 import re
 from urllib.parse import urljoin, urlparse
@@ -45,6 +46,7 @@ class CrawlOptions(BaseModel):
     timeout: Optional[int] = Field(30000, ge=1000, le=120000, description="Max wait time in milliseconds")
     executeJs: Optional[bool] = Field(True, description="Enable JavaScript rendering")
     userAgent: Optional[str] = Field(None, description="Custom user agent string")
+    bypassCloudflare: Optional[bool] = Field(True, description="Enable Cloudflare/anti-bot bypass (uses undetected browser)")
 
 class DiscoverRequest(BaseModel):
     """Request for discovering links on a page"""
@@ -319,11 +321,31 @@ async def discover_links(request: DiscoverRequest):
     try:
         print(f"\n🔍 [DISCOVER] Request for: {request.url}")
 
+        # Configure browser for Cloudflare bypass if requested
+        bypass_cloudflare = request.options.bypassCloudflare if request.options else True
+
+        if bypass_cloudflare:
+            print("[DISCOVER] Using UndetectedAdapter for Cloudflare bypass")
+            browser_config = BrowserConfig(
+                headless=False,  # Headless mode more easily detected
+                verbose=True,
+                enable_stealth=True
+            )
+            adapter = UndetectedAdapter()
+            strategy = AsyncPlaywrightCrawlerStrategy(
+                browser_config=browser_config,
+                browser_adapter=adapter
+            )
+            crawler_instance = AsyncWebCrawler(crawler_strategy=strategy)
+        else:
+            crawler_instance = AsyncWebCrawler()
+
         # Crawl the page
-        async with AsyncWebCrawler() as crawler:
+        async with crawler_instance as crawler:
             crawl_result = await crawler.arun(
                 url=request.url,
                 magic=True,
+                simulate_user=bypass_cloudflare,  # Add realistic behavior when bypassing
                 timeout=(request.options.timeout if request.options else 30000) / 1000
             )
 
@@ -423,11 +445,31 @@ async def scrape_content(request: ScrapeRequest):
     try:
         print(f"\n📄 [SCRAPE] Request for: {request.url}")
 
+        # Configure browser for Cloudflare bypass if requested
+        bypass_cloudflare = request.options.bypassCloudflare if request.options else True
+
+        if bypass_cloudflare:
+            print("[SCRAPE] Using UndetectedAdapter for Cloudflare bypass")
+            browser_config = BrowserConfig(
+                headless=False,  # Headless mode more easily detected
+                verbose=True,
+                enable_stealth=True
+            )
+            adapter = UndetectedAdapter()
+            strategy = AsyncPlaywrightCrawlerStrategy(
+                browser_config=browser_config,
+                browser_adapter=adapter
+            )
+            crawler_instance = AsyncWebCrawler(crawler_strategy=strategy)
+        else:
+            crawler_instance = AsyncWebCrawler()
+
         # Crawl the page
-        async with AsyncWebCrawler() as crawler:
+        async with crawler_instance as crawler:
             crawl_result = await crawler.arun(
                 url=request.url,
                 magic=True,
+                simulate_user=bypass_cloudflare,  # Add realistic behavior when bypassing
                 timeout=(request.options.timeout if request.options else 30000) / 1000
             )
 
